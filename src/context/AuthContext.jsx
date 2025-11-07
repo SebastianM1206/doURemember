@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import {
   getCurrentUser,
   logout as logoutService,
+  checkSession,
 } from "../services/authService";
 
 const AuthContext = createContext(null);
@@ -20,19 +21,40 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Verificar si hay un usuario guardado al cargar la aplicación
-    const currentUser = getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-    }
-    setLoading(false);
+    const initializeAuth = async () => {
+      try {
+        // Primero intentar obtener del localStorage (incluye verificación de expiración)
+        const currentUser = getCurrentUser();
+
+        if (currentUser) {
+          // Verificar también con Supabase que la sesión siga activa
+          const session = await checkSession();
+
+          if (session) {
+            setUser(currentUser);
+          } else {
+            // Si no hay sesión en Supabase, limpiar localStorage
+            localStorage.removeItem("user");
+            setUser(null);
+          }
+        }
+      } catch (error) {
+        console.error("Error al inicializar autenticación:", error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
   }, []);
 
   const login = (userData) => {
     setUser(userData);
   };
 
-  const logout = () => {
-    logoutService();
+  const logout = async () => {
+    await logoutService();
     setUser(null);
   };
 

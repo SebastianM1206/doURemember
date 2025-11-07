@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Login from "../components/Login";
 import Dashboard from "../pages/Dashboard";
+import AdminDashboard from "../pages/AdminDashboard";
+import PacienteDashboard from "../pages/PacienteDashboard";
+import CuidadorDashboard from "../pages/CuidadorDashboard";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 /**
@@ -11,7 +14,29 @@ import ProtectedRoute from "../components/ProtectedRoute";
  * 2. Reemplaza el contenido de App.jsx con <AppRoutes />
  */
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+
+  // Función para redirigir al dashboard correcto según el tipo de usuario
+  const getDefaultDashboard = () => {
+    if (!user) return "/login";
+
+    // Normalizar el tipo de usuario a minúsculas para comparación
+    const tipoUsuario = user.tipo_usuario?.toLowerCase();
+
+    switch (tipoUsuario) {
+      case "paciente":
+        return "/dashboard/paciente";
+      case "cuidador":
+        return "/dashboard/cuidador";
+      case "doctor":
+        return "/dashboard/doctor";
+      case "administrador":
+      case "admin":
+        return "/dashboard/admin";
+      default:
+        return "/dashboard";
+    }
+  };
 
   return (
     <BrowserRouter>
@@ -20,11 +45,15 @@ function AppRoutes() {
         <Route
           path="/login"
           element={
-            isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
+            isAuthenticated ? (
+              <Navigate to={getDefaultDashboard()} replace />
+            ) : (
+              <Login />
+            )
           }
         />
 
-        {/* Ruta protegida del dashboard */}
+        {/* Ruta protegida del dashboard genérico */}
         <Route
           path="/dashboard"
           element={
@@ -34,12 +63,38 @@ function AppRoutes() {
           }
         />
 
+        {/* Rutas protegidas por tipo de usuario */}
+        <Route
+          path="/dashboard/paciente"
+          element={
+            <ProtectedRoute allowedRoles={["paciente"]}>
+              <PacienteDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/cuidador"
+          element={
+            <ProtectedRoute allowedRoles={["cuidador"]}>
+              <CuidadorDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/admin"
+          element={
+            <ProtectedRoute allowedRoles={["administrador", "admin", "Admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Ruta por defecto - redirige según el estado de autenticación */}
         <Route
           path="/"
-          element={
-            <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-          }
+          element={<Navigate to={getDefaultDashboard()} replace />}
         />
 
         {/* Ruta 404 */}

@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { login as loginService, saveUser } from "../services/authService";
+import { login as loginService } from "../services/authService";
 import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,18 +20,30 @@ function LoginForm() {
       const result = await loginService(email, password);
 
       if (result.success) {
-        // Guardar el usuario en el almacenamiento
-        saveUser(result.data, remember);
-
         // Actualizar el contexto de autenticación
         login(result.data);
 
-        // Aquí puedes redirigir al dashboard o página principal
         console.log("Login exitoso:", result.data);
-        alert(`¡Bienvenido ${result.data.nombre}!`);
 
-        // TODO: Implementar redirección con React Router
-        // navigate('/dashboard');
+        // Redirigir según el tipo de usuario
+        const tipoUsuario = result.data.tipo_usuario;
+
+        switch (tipoUsuario) {
+          case "paciente":
+            navigate("/dashboard/paciente");
+            break;
+          case "cuidador":
+            navigate("/dashboard/cuidador");
+            break;
+          case "familiar":
+            navigate("/dashboard/familiar");
+            break;
+          case "administrador":
+            navigate("/dashboard/admin");
+            break;
+          default:
+            navigate("/dashboard");
+        }
       } else {
         setError(result.error);
       }
@@ -91,22 +104,7 @@ function LoginForm() {
               disabled={loading}
             />
           </div>
-
-          {/* Remember Me Checkbox */}
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="remember"
-              checked={remember}
-              onChange={(e) => setRemember(e.target.checked)}
-              className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900"
-              disabled={loading}
-            />
-            <label htmlFor="remember" className="ml-2 text-sm text-gray-700">
-              Recordar sesión
-            </label>
-          </div>
-
+ 
           {/* Login Button */}
           <button
             type="submit"

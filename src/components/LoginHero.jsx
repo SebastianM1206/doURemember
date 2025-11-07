@@ -32,7 +32,7 @@ function LoginHero() {
 
         {/* Footer */}
         <div className="text-blue-200 text-sm">
-          © 2024 doURemember. All rights reserved.
+          © 2025 doURemember. Todos los derechos reservados.
         </div>
       </div>
     </div>
