@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
+import { validatePassword } from "../../utils/passwordUtils";
+import {createUser} from "../../services/adminService";
 
 function CreatePatientModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
@@ -28,9 +30,57 @@ function CreatePatientModal({ isOpen, onClose }) {
     setLoading(true);
 
     try {
-      // TODO: Implementar la lógica para crear el paciente y cuidador
-      console.log("Creando paciente y cuidador:", formData);
+      //Se dividen los arreglos de los errores por rol
+      const patientValidations = validatePassword(formData.pacientePassword);
+      const caregiverValidations = validatePassword(formData.cuidadorPassword);
+      
+      //Si alguno de los roles tiene errores, se muestran
+      if (!validatePassword(formData.cuidadorPassword).isValid || !validatePassword(formData.pacientePassword).isValid){
+        setLoading(false);
+        // Mostrar errores del paciente
+        if (!patientValidations.isValid) {
+          patientValidations.errors.forEach((err, index) => { {/* Para cada uno de los errores, toma el item y el indice */}
+            setTimeout(() => (
+              toast.error(`PACIENTE: ${err}`, {pauseOnHover: false})
+            ), index * 5000) //El retraso de cada error depende de su indice para que nos e muetsren todos juentos
+          })
+        }
+        
+        // Mostrar errores del cuidador
+        if (!caregiverValidations.isValid) {
+          caregiverValidations.errors.forEach((err, index) => { {/* Para cada uno de los errores, toma el item y el indice */}
+            setTimeout(() => (
+              toast.error(`CUIDADOR: ${err}`, {pauseOnHover: false})
+            ), index * 5000) //El retraso de cada error depende de su indice para que nos e muetsren todos juentos
+          })
+        }
+        return;
+      }
 
+      //Datos del paciente
+      const patientData = {
+        nombre: formData.pacienteNombre,
+        email: formData.pacienteEmail,
+        password: formData.pacientePassword,
+        tipo_usuario: "Paciente"
+      }
+      //Datos del cuidador
+      const caregiverData = {
+        nombre: formData.cuidadorNombre,
+        email: formData.cuidadorEmail,
+        password: formData.cuidadorPassword,
+        tipo_usuario: "Cuidador"
+      }
+
+      //Manejo de error agrupado
+      const { error: createPatientError } = await createUser(patientData);
+      const { error: createCaregiverError } = await createUser(caregiverData);
+      if (createPatientError || createCaregiverError) {
+        toast.error("Error al crear usuarios");
+        return;
+      }
+      
+      console.log("Creando paciente y cuidador:", formData);
       // Simular petición
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
@@ -201,10 +251,10 @@ function CreatePatientModal({ isOpen, onClose }) {
                       required
                       minLength={6}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder="Mínimo 8 caracteres"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      La contraseña debe tener al menos 6 caracteres
+                      La contraseña debe tener al menos 8 caracteres
                     </p>
                   </div>
                 </div>
@@ -291,10 +341,10 @@ function CreatePatientModal({ isOpen, onClose }) {
                       required
                       minLength={6}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder="Mínimo 8 caracteres"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      La contraseña debe tener al menos 6 caracteres
+                      La contraseña debe tener al menos 8 caracteres
                     </p>
                   </div>
                 </div>
