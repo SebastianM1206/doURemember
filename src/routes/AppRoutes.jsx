@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import Login from "../components/Login";
 import Dashboard from "../pages/Dashboard";
 import AdminDashboard from "../pages/AdminDashboard";
+import DoctorDashboard from "../pages/DoctorDashboard";
 import PacienteDashboard from "../pages/PacienteDashboard";
 import CuidadorDashboard from "../pages/CuidadorDashboard";
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -78,6 +79,15 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={["cuidador"]}>
               <CuidadorDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/doctor"
+          element={
+            <ProtectedRoute allowedRoles={["doctor"]}>
+              <DoctorDashboard />
             </ProtectedRoute>
           }
         />

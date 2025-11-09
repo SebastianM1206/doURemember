@@ -120,7 +120,6 @@ function Dashboard({ tipo }) {
             <p className="text-gray-600">
               Bienvenido {user?.nombre}. Aquí podrás administrar el sistema.
             </p>
-            {/* Aquí puedes agregar componentes específicos para administradores */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <h3 className="font-semibold text-red-900 mb-2">Usuarios</h3>
