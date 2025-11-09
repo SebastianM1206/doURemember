@@ -44,41 +44,13 @@ function CuidadorDashboard() {
 
         {/* Dashboard Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Card: Mis Pacientes */}
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow duration-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Mis Pacientes
-              </h3>
-              <div className="bg-green-100 rounded-full p-3">
-                <svg
-                  className="w-6 h-6 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-            <p className="text-gray-600 text-sm mb-4">
-              Ver y gestionar pacientes asignados
-            </p>
-            <button className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-              Ver Pacientes
-            </button>
-          </div>
+
 
           {/* Card: Tareas del Día */}
           <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow duration-200">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
-                Tareas del Día
+                Imagenes
               </h3>
               <div className="bg-blue-100 rounded-full p-3">
                 <svg
@@ -91,46 +63,23 @@ function CuidadorDashboard() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                    d="M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"
                   />
-                </svg>
-              </div>
-            </div>
-            <p className="text-gray-600 text-sm mb-4">
-              Tareas y actividades programadas
-            </p>
-            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-              Ver Tareas
-            </button>
-          </div>
-
-          {/* Card: Crear Actividad */}
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow duration-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Crear Actividad
-              </h3>
-              <div className="bg-purple-100 rounded-full p-3">
-                <svg
-                  className="w-6 h-6 text-purple-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 4v16m8-8H4"
+                    d="M4 15l4-4 4 4 4-5 4 5"
                   />
+                  <circle cx={8.5} cy={8.5} r={1.5} fill="currentColor" />
                 </svg>
               </div>
             </div>
             <p className="text-gray-600 text-sm mb-4">
-              Programar nuevas actividades para pacientes
+              Ver imágenes que saldrán en los test
             </p>
-            <button className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-              Nueva Actividad
+            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+              Ver Imagenes
             </button>
           </div>
 
@@ -155,7 +104,7 @@ function CuidadorDashboard() {
               </div>
             </div>
             <p className="text-gray-600 text-sm mb-4">
-              Ver reportes de progreso de pacientes
+              Ver reportes de progreso del paciente
             </p>
             <button className="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
               Ver Reportes
