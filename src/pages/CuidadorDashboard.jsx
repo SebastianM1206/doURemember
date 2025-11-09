@@ -78,7 +78,10 @@ function CuidadorDashboard() {
             <p className="text-gray-600 text-sm mb-4">
               Ver imágenes que saldrán en los test
             </p>
-            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+            <button
+              onClick={() => navigate("/dashboard/cuidador/imagenes")}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200"
+            >
               Ver Imagenes
             </button>
           </div>
