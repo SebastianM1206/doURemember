@@ -1,11 +1,12 @@
-﻿import { useState } from "react"
+﻿import { useEffect, useState } from "react"
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 import {TaskModal} from "../components/TaskModal"
 import { arrayTaskModal } from "../utils/mockedData"
 import { useConfirm } from "../hooks/useConfirm";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import { getCompletion } from "../services/openaiService";
+import { createReport } from "../services/reportService";
+import { toast } from "react-toastify";
 
 function PacienteDashboard() {
   const { user, logout } = useAuth();
@@ -14,6 +15,10 @@ function PacienteDashboard() {
   const [description, setDescription] = useState("");
   const [infoDescriptions, setInfoDescriptions] = useState([]);
   const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    
+  }, [])
 
   const handleLogoutClick = () => {
     openConfirm({
@@ -30,11 +35,55 @@ function PacienteDashboard() {
 
   const finishTask = (index === arrayTaskModal.length - 1);
 
+  const getAvgToReport = (arrayReport) => {
+    let totales = {
+      topical_consistency: 0,
+      logica_flow: 0,
+      linguistic_complexity: 0,
+      presence_entities: 0,
+      accuracy_details: 0,
+      omission_rate: 0,
+      comission_rate: 0
+    }
+    arrayReport.forEach((criteria) => {
+      totales.topical_consistency += criteria.topical_consistency;
+      totales.logica_flow += criteria.logica_flow;
+      totales.linguistic_complexity += criteria.linguistic_complexity;
+      totales.presence_entities += criteria.topical_consistency;
+      totales.accuracy_details += criteria.accuracy_details;
+      totales.omission_rate += criteria.omission_rate;
+      totales.comission_rate += criteria.comission_rate;
+    });
+
+    const avgReport =  {
+      topical_consistency: Math.round(totales.topical_consistency / arrayReport.length),
+      logica_flow: Math.round(totales.logica_flow / arrayReport.length),
+      linguistic_complexity: Math.round(totales.linguistic_complexity / arrayReport.length),
+      presence_entities: Math.round(totales.presence_entities / arrayReport.length),
+      accuracy_details: Math.round(totales.accuracy_details / arrayReport.length),
+      omission_rate: Math.round(totales.omission_rate / arrayReport.length),
+      comission_rate: Math.round(totales.comission_rate / arrayReport.length),
+      tipo_reporte: "General",
+      id_usuario: user.id
+    }
+    return avgReport;
+  }
+
   const createDailyReport = async () => {
     setTaskModal(false);
     const {completion} = await getCompletion(JSON.stringify(infoDescriptions));
     const limpio = completion.replace(/`/g, "").replace("json", "").trim();
-    const evaluationArray = JSON.parse(limpio)
+    const evaluationArray = JSON.parse(limpio);
+    console.log(`Before avg: ${evaluationArray}`)
+    console.log(`Before STRINGIFY avg: ${JSON.stringify(evaluationArray)}`)
+    const averageReport = getAvgToReport(evaluationArray);
+    console.log("Promedio: ", averageReport);
+    const {data, error} = createReport(averageReport);
+    if(error){
+      toast.error(error);
+    }
+    console.log(`Data: ${data}\nError: ${error}`)
+    setDescription("");
     setInfoDescriptions([]);
     setIndex(0);
   }

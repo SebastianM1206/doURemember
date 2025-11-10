@@ -173,3 +173,24 @@ export async function updateUser(id, updateData) {
     return { data: null, error: error.message };
   }
 }
+
+/**
+ * Creacion de un nuevo grupo
+ * @param {Object} groupData Datos del grupo a crear
+ * @param {string} groupData.medico_id Identificador del medico que crea el grupo
+ * @param {string} groupData.cuidador_id Identificador del cuidador que es agregado al grupo
+ * @param {string} groupData.paciente_id Identificador del paciente que es agregado al grupo
+ */
+export async function createGroup(groupData){
+  try{
+    const {data, error} = await supabase.from("grupos").insert([groupData]);
+    if (error) {
+      console.error("Error al crar grupo: ", error.message);
+      return { data: null, error: data.message };
+    }
+    return {data, error: null};
+  }catch(error){
+    console.error("Error al crear el grupo: ", error);
+    return { data: null, error: error.message };
+  }
+}

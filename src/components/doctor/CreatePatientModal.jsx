@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { validatePassword } from "../../utils/passwordUtils";
-import {createUser} from "../../services/adminService";
+import {createGroup, createUser} from "../../services/adminService";
+import { useAuth } from "../../context/AuthContext";
 
 function CreatePatientModal({ isOpen, onClose }) {
+  const {user} = useAuth
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     // Datos del Paciente
@@ -71,12 +73,28 @@ function CreatePatientModal({ isOpen, onClose }) {
         password: formData.cuidadorPassword,
         tipo_usuario: "Cuidador"
       }
-
-      //Manejo de error agrupado
-      const { error: createPatientError } = await createUser(patientData);
-      const { error: createCaregiverError } = await createUser(caregiverData);
+      
+      const { data: patientInfo, error: createPatientError } = await createUser(patientData);
+      const { data: caregiverInfo, error: createCaregiverError } = await createUser(caregiverData);
       if (createPatientError || createCaregiverError) {
         toast.error("Error al crear usuarios");
+        return;
+      }
+
+      const groupData = {
+        medico_id: user.id,
+        cuidador_id: caregiverInfo.id,
+        paciente_id: patientInfo.id
+      }
+
+      const {error: groupError} = await createGroup(groupData);
+      if(groupError){
+        toast.error(groupError);
+        /*
+        POSIBLE LOGICA PARA ELIMINAR LOS USUARIO EN CASO DE ERROR AL CREAR EL GRUPO
+        await deleteUser(patientInfo.id);
+        await deleteUser(caregiverInfo.id);
+        */
         return;
       }
       
