@@ -160,6 +160,7 @@ function CuidadorReportes() {
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
   const [hoveredPoint, setHoveredPoint] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -342,6 +343,89 @@ function CuidadorReportes() {
     ? getTypeColor(hoveredPoint.tipo)
     : null;
 
+  const sanitizeForFilename = (value) =>
+    value
+      ?.toString()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "") || "paciente";
+
+  const buildCsvContent = (data) => {
+    const headers = [
+      "Fecha",
+      "Tipo de reporte",
+      "Consistencia temática (1-5)",
+      "Flujo lógico (1-5)",
+      "Complejidad lingüística (1-5)",
+      "Mención de entidades (1-5)",
+      "Precisión en detalles (1-5)",
+      "Tasa de omisión (1-5)",
+      "Tasa de comisión (1-5)",
+      "Puntaje global (1-5)",
+    ];
+
+    const rows = data.map((report) => [
+      formatDate(report.fecha),
+      formatReportType(report.tipo),
+      formatScore(report.metrics.topicalConsistency),
+      formatScore(report.metrics.logicalFlow),
+      formatScore(report.metrics.linguisticComplexity),
+      formatScore(report.metrics.presenceEntities),
+      formatScore(report.metrics.accuracyDetails),
+      formatScore(report.metrics.omissionRate),
+      formatScore(report.metrics.comissionRate),
+      formatScore(report.globalScore),
+    ]);
+
+    return [headers, ...rows]
+      .map((row) =>
+        row
+          .map((value) => {
+            const safeValue = value ?? "";
+            return `"${String(safeValue).replace(/"/g, '""')}"`;
+          })
+          .join(",")
+      )
+      .join("\r\n");
+  };
+
+  const handleExportReports = () => {
+    if (!filteredReports.length || exporting) {
+      return;
+    }
+
+    try {
+      setExporting(true);
+      const csvContent = buildCsvContent(filteredReports);
+      const blob = new Blob([csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
+
+      const safePatient = sanitizeForFilename(targetName);
+      const safeFilter =
+        selectedType === "todos"
+          ? "todos"
+          : sanitizeForFilename(formatReportType(selectedType));
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const fileName = `reportes_${safePatient}_${safeFilter}_${timestamp}.csv`;
+
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    } catch (exportError) {
+      console.error("Error exportando reportes:", exportError);
+      alert("No se pudo exportar el reporte. Intenta nuevamente.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
@@ -357,18 +441,32 @@ function CuidadorReportes() {
               Visualiza el desempeño y las métricas generadas automáticamente
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button
+              type="button"
               onClick={() => navigate("/dashboard/cuidador")}
               className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Volver al panel
             </button>
             <button
+              type="button"
               onClick={loadReports}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Actualizar
+            </button>
+            <button
+              type="button"
+              onClick={handleExportReports}
+              disabled={!filteredReports.length || exporting}
+              className={`px-4 py-2 rounded-lg transition-colors border ${
+                !filteredReports.length || exporting
+                  ? "bg-emerald-200 border-emerald-200 text-emerald-800 cursor-not-allowed opacity-70"
+                  : "bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700"
+              }`}
+            >
+              {exporting ? "Exportando..." : "Exportar reporte"}
             </button>
           </div>
         </div>
