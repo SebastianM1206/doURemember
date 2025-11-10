@@ -1,4 +1,5 @@
-export const TaskModal = ({url, onClick, buttonText}) => {
+export const TaskModal = ({url, onClick, buttonText, onChange, value, disabled}) => {
+
     return (
         <div className="fixed inset-0 backdrop-blur-sm flex justify-center items-center z-50" >
             <div className="relative bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl animate-slideIn" >
@@ -14,7 +15,9 @@ export const TaskModal = ({url, onClick, buttonText}) => {
                     <p>Realiza la descripcion aqui abajo ↓</p>
                 </div>
                 <div className="mb-6" >
-                    <textarea 
+                    <textarea
+                    onChange={onChange}
+                    value={value}
                     className="w-full min-h-[160px] p-2 text-base border-2 border-gray-300 rounded-xl resize-none transition-all duration-300 text-gray-800 focus:outline-none"
                     required
                     >
@@ -22,7 +25,8 @@ export const TaskModal = ({url, onClick, buttonText}) => {
                 </div>
                 <div className="flex justify-center" >
                     <button className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-3.5 text-base font-semibold rounded-xl cursor-pointer"
-                    onClick={onClick}>
+                    onClick={onClick}
+                    disabled={disabled}>
                         {buttonText}
                     </button>
                 </div>

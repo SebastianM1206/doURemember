@@ -3,21 +3,52 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import {TaskModal} from "../components/TaskModal"
 import { arrayTaskModal } from "../utils/mockedData"
+import { useConfirm } from "../hooks/useConfirm";
+import ConfirmDialog from "../components/common/ConfirmDialog";
+import { getCompletion } from "../services/openaiService";
 
 function PacienteDashboard() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { isOpen, data, openConfirm, closeConfirm } = useConfirm();
   const [taskModal, setTaskModal] = useState(false);
+  const [description, setDescription] = useState("");
+  const [infoDescriptions, setInfoDescriptions] = useState([]);
   const [index, setIndex] = useState(0);
 
-  const handleLogout = async () => {
-    if (window.confirm("Estas seguro de que quieres cerrar sesion?")) {
-      await logout();
-      navigate("/login");
-    }
+  const handleLogoutClick = () => {
+    openConfirm({
+      title: "Cerrar Sesión",
+      message: "¿Estás seguro que deseas cerrar sesión?",
+      type: "warning",
+    });
+  };
+
+  const handleConfirmLogout = () => {
+    logout();
+    closeConfirm();
   };
 
   const finishTask = (index === arrayTaskModal.length - 1);
+
+  const createDailyReport = async () => {
+    setTaskModal(false);
+    const {completion} = await getCompletion(JSON.stringify(infoDescriptions));
+    const limpio = completion.replace(/`/g, "").replace("json", "").trim();
+    const evaluationArray = JSON.parse(limpio)
+    setInfoDescriptions([]);
+    setIndex(0);
+  }
+
+  const nextImage = () => {
+    if (description === "") return;
+    infoDescriptions.push({
+      original_desc: arrayTaskModal[index].des_img,
+      patient_desc: description
+    })
+    setDescription("");
+    finishTask ? createDailyReport() : setIndex(index + 1);
+    console.log(JSON.stringify(infoDescriptions));
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -29,7 +60,7 @@ function PacienteDashboard() {
             <p className="text-sm text-gray-600">Mi Portal de Paciente</p>
           </div>
           <button
-            onClick={handleLogout}
+            onClick={handleLogoutClick}
             className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
           >
             Cerrar Sesion
@@ -61,12 +92,27 @@ function PacienteDashboard() {
       </main>
       {taskModal && (
         <TaskModal
+        onChange={(e) => setDescription(e.target.value)}
+        value={description}
+        disabled={description === "" ? true : false}
         url={arrayTaskModal[index].url_img}
-        onClick={finishTask ? () => setTaskModal(false) : () => setIndex(index + 1)}
+        onClick={nextImage}
         buttonText={finishTask ? "Finalizar" : "Siguiente"}
         />
       )}
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={isOpen}
+        onClose={closeConfirm}
+        onConfirm={handleConfirmLogout}
+        title={data?.title}
+        message={data?.message}
+        type={data?.type}
+        confirmText="Cerrar Sesión"
+        cancelText="Cancelar"
+      />
     </div>
+    
   );
 }
 
