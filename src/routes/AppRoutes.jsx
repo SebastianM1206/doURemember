@@ -6,6 +6,7 @@ import AdminDashboard from "../pages/AdminDashboard";
 import PacienteDashboard from "../pages/PacienteDashboard";
 import CuidadorDashboard from "../pages/CuidadorDashboard";
 import CuidadorImagenes from "../components/Cuidador/CuidadorImagenes";
+import CuidadorReportes from "../components/Cuidador/CuidadorReportes";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 /**
@@ -87,6 +88,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={["cuidador"]}>
               <CuidadorImagenes />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/cuidador/reportes"
+          element={
+            <ProtectedRoute allowedRoles={["cuidador"]}>
+              <CuidadorReportes />
             </ProtectedRoute>
           }
         />
