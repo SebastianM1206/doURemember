@@ -18,7 +18,7 @@ export async function redeemInvitation(token, nombre, password, email = null) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY, // ✅ necesario para CORS
+          apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY, //  necesario para CORS
           Authorization: `Bearer ${
             import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY
           }`, // ✅ recomendado
