@@ -1,8 +1,13 @@
-export const TaskModal = ({url, onClick, buttonText, onChange, value, disabled}) => {
+export const TaskModal = ({url, onClick, buttonText, onChange, value, disabled, onClose}) => {
 
     return (
         <div className="fixed inset-0 backdrop-blur-sm flex justify-center items-center z-50" >
             <div className="relative bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl animate-slideIn" >
+                <button 
+                    onClick={onClose}
+                    className="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 w-8 h-8 rounded-full text-xl text-gray-600 hover:text-gray-800 flex items-center justify-center transition-all duration-200">
+                    x
+                </button>
                 <div>
                     <h2 className="text-3xl font-bold text-center text-gray-800 mb-6 tracking-tight" >
                         DESCRIBE IMAGENES

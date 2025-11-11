@@ -1,12 +1,12 @@
 ﻿import { useEffect, useState } from "react"
 import { useAuth } from "../context/AuthContext";
 import {TaskModal} from "../components/TaskModal"
-import { arrayTaskModal } from "../utils/mockedData"
 import { useConfirm } from "../hooks/useConfirm";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import { getCompletion } from "../services/openaiService";
-import { createReport } from "../services/reportService";
+import { createReport, getLatestReportDateByPatientId } from "../services/reportService";
 import { toast } from "react-toastify";
+import { getRandomPicturesByPatientId } from "../services/imageService";
 
 function PacienteDashboard() {
   const { user, logout } = useAuth();
@@ -14,12 +14,48 @@ function PacienteDashboard() {
   const [taskModal, setTaskModal] = useState(false);
   const [description, setDescription] = useState("");
   const [infoDescriptions, setInfoDescriptions] = useState([]);
+  const [picturesTask, setPicturesTask] = useState([]);
   const [index, setIndex] = useState(0);
-
+  const [latestReportDate, setLatestReportDate] = useState({});
+  const [todayTaskDone, setTodayTaskDone] = useState(false);
+  
+  //Carga la fecha del ultimo reporte del paciente para saber si ya hizo o el test de hoy
   useEffect(() => {
-    
-  }, [])
+    const fetchLatestReportDate = async () => {
+      const {data, error} = await getLatestReportDateByPatientId(user.id);
+      // console.log(data)
+      if(error){
+        toast.error(error);
+      }
+      const reportDate = new Date(data.fecha);
+      setLatestReportDate(reportDate);
+      const currentDate = new Date();
+      const reportDay = reportDate.getDate();
+      const today = currentDate.getDate();
+      if (reportDate && reportDay === today){
+        setTodayTaskDone(true);
+      return data;
+    }
+    if(!data){
+      return;
+    }
+  }
+  fetchLatestReportDate();
+}, [todayTaskDone, taskModal]);
 
+  //Empieza el test y trae las imagenes
+  const startNewTest = async () => {
+    if(todayTaskDone){
+      toast.error("Ya realizaste tu sesion de hoy, vuelve mañana")
+      return;
+    }
+    const {shuffled, error} = await getRandomPicturesByPatientId(user.id);
+    // console.log(shuffled)
+    setPicturesTask(shuffled);
+    setTaskModal(true);
+  }
+
+  //Manejo del logout
   const handleLogoutClick = () => {
     openConfirm({
       title: "Cerrar Sesión",
@@ -33,8 +69,18 @@ function PacienteDashboard() {
     closeConfirm();
   };
 
-  const finishTask = (index === arrayTaskModal.length - 1);
+  //Manejo de la calcelacion del desarrollo del test
+  const cancelTask = () => {
+    setDescription("");
+    setInfoDescriptions([]);
+    setPicturesTask([]);
+    setIndex(0);
+    setTaskModal(false);
+  }
 
+  const finishTask = (index === picturesTask.length - 1);
+
+  //Saca el promedio de los criterios de las imagenes para el reporte
   const getAvgToReport = (arrayReport) => {
     let totales = {
       topical_consistency: 0,
@@ -69,29 +115,32 @@ function PacienteDashboard() {
     return avgReport;
   }
 
+  //Para crear el reporte de cada sesion
   const createDailyReport = async () => {
+    toast.success("¡Haz completado tu sesión de hoy!")
     setTaskModal(false);
     const {completion} = await getCompletion(JSON.stringify(infoDescriptions));
     const limpio = completion.replace(/`/g, "").replace("json", "").trim();
     const evaluationArray = JSON.parse(limpio);
-    console.log(`Before avg: ${evaluationArray}`)
-    console.log(`Before STRINGIFY avg: ${JSON.stringify(evaluationArray)}`)
+    // console.log(`Before avg: ${evaluationArray}`)
+    // console.log(`Before STRINGIFY avg: ${JSON.stringify(evaluationArray)}`)
     const averageReport = getAvgToReport(evaluationArray);
-    console.log("Promedio: ", averageReport);
-    const {data, error} = createReport(averageReport);
+    // console.log("Promedio: ", averageReport);
+    const {data, error} = await createReport(averageReport);
     if(error){
       toast.error(error);
     }
-    console.log(`Data: ${data}\nError: ${error}`)
+    // console.log(`Data: ${data}\nError: ${error}`)
     setDescription("");
     setInfoDescriptions([]);
     setIndex(0);
   }
 
+  //Logica para el cambio de imagenes en el test
   const nextImage = () => {
     if (description === "") return;
     infoDescriptions.push({
-      original_desc: arrayTaskModal[index].des_img,
+      original_desc: picturesTask[index].descripcion,
       patient_desc: description
     })
     setDescription("");
@@ -125,15 +174,15 @@ function PacienteDashboard() {
             Hola, {user?.nombre}
           </h2>
           <p className="text-gray-600">
-            ¿Estas listo para realizar tu actividad diaria?
+            ¿Estas listo para realizar tu test diario?
           </p>
           <div className="mt-6 flex justify-center">
             <button
               type="button"
               className="inline-flex items-center justify-center rounded-lg border border-blue-600 bg-blue-600 px-6 py-3 text-base font-semibold text-white transition-colors duration-200 hover:bg-blue-700"
-              onClick={() => setTaskModal(true)}
+              onClick={() => startNewTest()}
             >
-              Iniciar Actividad
+              Iniciar Test
             </button>
           </div>
         </div>
@@ -144,8 +193,9 @@ function PacienteDashboard() {
         onChange={(e) => setDescription(e.target.value)}
         value={description}
         disabled={description === "" ? true : false}
-        url={arrayTaskModal[index].url_img}
+        url={picturesTask[index].url}
         onClick={nextImage}
+        onClose={cancelTask}
         buttonText={finishTask ? "Finalizar" : "Siguiente"}
         />
       )}

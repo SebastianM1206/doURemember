@@ -59,3 +59,25 @@ export async function deleteReport(reportId){
         console.error("Error al eliminar reporte: ", error);
     }
 }
+
+/**
+ * Obtiene la fecha del ultimo reporte realizado por un paciente
+ * @param {string} patientId Identificador del paciente
+ * @returns {Object} Objeto con la fecha del ultimo reporte del paciente
+ */
+export async function getLatestReportDateByPatientId(patientId){
+    try{
+        const {data, error} = await supabase.from("reportes")
+        .select("fecha")
+        .eq("id_usuario", patientId)
+        .order("fecha", {ascending: false})
+        .limit(1);
+        if(error){
+            console.error("Error al obtener la fecha", error);
+            return { data: null, error: data.error || "Error al obtener la fecha" };
+        }
+        return {data: data[0], error: null};
+    }catch (error){
+        console.error("Error al obtener la fecha del ultimo raporte: ", error);
+    }
+}

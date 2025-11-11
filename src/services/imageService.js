@@ -19,6 +19,43 @@ export async function insertPicture(pictureData){
         console.error("Error al ingresar la foto")
     }
 }
+/**
+ * Obtiene el identificador del grupo a partir del identificador del paciente
+ * @param {string} patientId Identificador del paciente
+ * @returns {number} Identificador del grupo asociado al paciente
+ */
+async function getGroupId(patientId){
+    try{
+        const {data, error} = await supabase.from("grupos").select("id").eq("paciente_id", patientId).single();
+        if(error){
+            console.error("Error al obtener el ID del grupo: ", error);
+            return {data: null, error: data.error || "Error al obtener el ID del grupo"};
+        }
+        return {data: data.id};
+    }catch(error){
+        console.error("Error al obtener el grupo_id");
+    }
+}
+
+/**
+ * Obtiene 5 fotos aleatorias asociadas a un paciente
+ * @param {string} patientId Identificador del paciente que solicita las fotos
+ * @returns {array} Arreglo de las fotos aleatorias asociadas al paciente
+ */
+export async function getRandomPicturesByPatientId(patientId){
+    const {data: groupId} = await getGroupId(patientId);
+    try{
+        const {data, error} = await supabase.from("fotos").select("*").eq("grupo_id", groupId);
+        if(error){
+            console.error("Error al obtener las fotos: ", error);
+            return { data: null, error: data.error || "Error al obtener las fotos" };
+        }
+        const shuffled = data.sort(() => 0.5 - Math.random()).slice(0, 5);
+        return {shuffled, error: null};
+    }catch(error){
+        console.error("Error al obtener fotos");
+    }
+}
 
 /**
  * Actualizar la descipcion de la foto
