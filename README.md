@@ -21,7 +21,6 @@
 - [Acerca del Proyecto](#-acerca-del-proyecto)
 - [Características Principales](#-características-principales)
 - [Stack Tecnológico](#️-stack-tecnológico)
-- [Arquitectura](#-arquitectura)
 - [Requisitos Previos](#-requisitos-previos)
 - [Instalación](#-instalación)
 - [Configuración](#️-configuración)
@@ -115,26 +114,6 @@ El deterioro cognitivo requiere un seguimiento constante y objetivo. DoURemember
 
 ---
 
-## 🏗️ Arquitectura
-
-```
-┌─────────────────┐
-│   React App     │
-│   (Frontend)    │
-└────────┬────────┘
-         │
-         ├──────────────┐
-         │              │
-         ▼              ▼
-┌──────────────┐  ┌──────────────┐
-│   Supabase   │  │  OpenAI API  │
-│   Backend    │  │   (GPT-4o)   │
-└──────────────┘  └──────────────┘
-         │
-         ├─ Auth
-         ├─ PostgreSQL
-         └─ Storage
-```
 
 ### Flujo de Datos
 
