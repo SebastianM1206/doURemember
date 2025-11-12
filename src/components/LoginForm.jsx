@@ -35,8 +35,8 @@ function LoginForm() {
           case "cuidador":
             navigate("/dashboard/cuidador");
             break;
-          case "familiar":
-            navigate("/dashboard/familiar");
+          case "doctor":
+            navigate("/dashboard/doctor");
             break;
           case "administrador":
             navigate("/dashboard/admin");
@@ -104,7 +104,7 @@ function LoginForm() {
               disabled={loading}
             />
           </div>
- 
+
           {/* Login Button */}
           <button
             type="submit"

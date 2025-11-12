@@ -1,16 +1,152 @@
+﻿import { useEffect, useState } from "react"
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import {TaskModal} from "../components/TaskModal"
+import { useConfirm } from "../hooks/useConfirm";
+import ConfirmDialog from "../components/common/ConfirmDialog";
+import { getCompletion } from "../services/openaiService";
+import { createReport, getLatestReportDateByPatientId } from "../services/reportService";
+import { toast } from "react-toastify";
+import { getRandomPicturesByPatientId } from "../services/imageService";
 
 function PacienteDashboard() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    if (window.confirm("¿Estás seguro de que quieres cerrar sesión?")) {
-      await logout();
-      navigate("/login");
+  const { isOpen, data, openConfirm, closeConfirm } = useConfirm();
+  const [taskModal, setTaskModal] = useState(false);
+  const [description, setDescription] = useState("");
+  const [infoDescriptions, setInfoDescriptions] = useState([]);
+  const [picturesTask, setPicturesTask] = useState([]);
+  const [index, setIndex] = useState(0);
+  const [latestReportDate, setLatestReportDate] = useState({});
+  const [todayTaskDone, setTodayTaskDone] = useState(false);
+  
+  //Carga la fecha del ultimo reporte del paciente para saber si ya hizo o el test de hoy
+  useEffect(() => {
+    const fetchLatestReportDate = async () => {
+      const {data, error} = await getLatestReportDateByPatientId(user.id);
+      // console.log(data)
+      if(error){
+        toast.error(error);
+      }
+      const reportDate = new Date(data.fecha);
+      setLatestReportDate(reportDate);
+      const currentDate = new Date();
+      const reportDay = reportDate.getDate();
+      const today = currentDate.getDate();
+      if (reportDate && reportDay === today){
+        setTodayTaskDone(true);
+      return data;
     }
+    if(!data){
+      return;
+    }
+  }
+  fetchLatestReportDate();
+}, [todayTaskDone, taskModal]);
+
+  //Empieza el test y trae las imagenes
+  const startNewTest = async () => {
+    if(todayTaskDone){
+      toast.error("Ya realizaste tu sesion de hoy, vuelve mañana")
+      return;
+    }
+    const {shuffled, error} = await getRandomPicturesByPatientId(user.id);
+    // console.log(shuffled)
+    setPicturesTask(shuffled);
+    setTaskModal(true);
+  }
+
+  //Manejo del logout
+  const handleLogoutClick = () => {
+    openConfirm({
+      title: "Cerrar Sesión",
+      message: "¿Estás seguro que deseas cerrar sesión?",
+      type: "warning",
+    });
   };
+
+  const handleConfirmLogout = () => {
+    logout();
+    closeConfirm();
+  };
+
+  //Manejo de la calcelacion del desarrollo del test
+  const cancelTask = () => {
+    setDescription("");
+    setInfoDescriptions([]);
+    setPicturesTask([]);
+    setIndex(0);
+    setTaskModal(false);
+  }
+
+  const finishTask = (index === picturesTask.length - 1);
+
+  //Saca el promedio de los criterios de las imagenes para el reporte
+  const getAvgToReport = (arrayReport) => {
+    let totales = {
+      topical_consistency: 0,
+      logica_flow: 0,
+      linguistic_complexity: 0,
+      presence_entities: 0,
+      accuracy_details: 0,
+      omission_rate: 0,
+      comission_rate: 0
+    }
+    arrayReport.forEach((criteria) => {
+      totales.topical_consistency += criteria.topical_consistency;
+      totales.logica_flow += criteria.logica_flow;
+      totales.linguistic_complexity += criteria.linguistic_complexity;
+      totales.presence_entities += criteria.topical_consistency;
+      totales.accuracy_details += criteria.accuracy_details;
+      totales.omission_rate += criteria.omission_rate;
+      totales.comission_rate += criteria.comission_rate;
+    });
+
+    const avgReport =  {
+      topical_consistency: Math.round(totales.topical_consistency / arrayReport.length),
+      logica_flow: Math.round(totales.logica_flow / arrayReport.length),
+      linguistic_complexity: Math.round(totales.linguistic_complexity / arrayReport.length),
+      presence_entities: Math.round(totales.presence_entities / arrayReport.length),
+      accuracy_details: Math.round(totales.accuracy_details / arrayReport.length),
+      omission_rate: Math.round(totales.omission_rate / arrayReport.length),
+      comission_rate: Math.round(totales.comission_rate / arrayReport.length),
+      tipo_reporte: "General",
+      id_usuario: user.id
+    }
+    return avgReport;
+  }
+
+  //Para crear el reporte de cada sesion
+  const createDailyReport = async () => {
+    toast.success("¡Haz completado tu sesión de hoy!")
+    setTaskModal(false);
+    const {completion} = await getCompletion(JSON.stringify(infoDescriptions));
+    const limpio = completion.replace(/`/g, "").replace("json", "").trim();
+    const evaluationArray = JSON.parse(limpio);
+    // console.log(`Before avg: ${evaluationArray}`)
+    // console.log(`Before STRINGIFY avg: ${JSON.stringify(evaluationArray)}`)
+    const averageReport = getAvgToReport(evaluationArray);
+    // console.log("Promedio: ", averageReport);
+    const {data, error} = await createReport(averageReport);
+    if(error){
+      toast.error(error);
+    }
+    // console.log(`Data: ${data}\nError: ${error}`)
+    setDescription("");
+    setInfoDescriptions([]);
+    setIndex(0);
+  }
+
+  //Logica para el cambio de imagenes en el test
+  const nextImage = () => {
+    if (description === "") return;
+    infoDescriptions.push({
+      original_desc: picturesTask[index].descripcion,
+      patient_desc: description
+    })
+    setDescription("");
+    finishTask ? createDailyReport() : setIndex(index + 1);
+    console.log(JSON.stringify(infoDescriptions));
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -22,10 +158,10 @@ function PacienteDashboard() {
             <p className="text-sm text-gray-600">Mi Portal de Paciente</p>
           </div>
           <button
-            onClick={handleLogout}
+            onClick={handleLogoutClick}
             className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
           >
-            Cerrar Sesión
+            Cerrar Sesion
           </button>
         </div>
       </header>
@@ -38,105 +174,46 @@ function PacienteDashboard() {
             Hola, {user?.nombre}
           </h2>
           <p className="text-gray-600">
-            Aquí podrás ver tus actividades, recordatorios y progreso diario.
+            ¿Estas listo para realizar tu test diario?
           </p>
-        </div>
-
-        {/* Dashboard Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Card: Mis Actividades */}
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow duration-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Mis Actividades
-              </h3>
-              <div className="bg-purple-100 rounded-full p-3">
-                <svg
-                  className="w-6 h-6 text-purple-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
-              </div>
-            </div>
-            <p className="text-gray-600 text-sm mb-4">
-              Ver actividades programadas para hoy
-            </p>
-            <button className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-              Ver Actividades
-            </button>
-          </div>
-
-          {/* Card: Recordatorios */}
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow duration-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Recordatorios
-              </h3>
-              <div className="bg-blue-100 rounded-full p-3">
-                <svg
-                  className="w-6 h-6 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                </svg>
-              </div>
-            </div>
-            <p className="text-gray-600 text-sm mb-4">
-              Recordatorios pendientes y próximos
-            </p>
-            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-              Ver Recordatorios
-            </button>
-          </div>
-
-          {/* Card: Mi Progreso */}
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow duration-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Mi Progreso
-              </h3>
-              <div className="bg-green-100 rounded-full p-3">
-                <svg
-                  className="w-6 h-6 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-              </div>
-            </div>
-            <p className="text-gray-600 text-sm mb-4">
-              Ver estadísticas y avances
-            </p>
-            <button className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-              Ver Progreso
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-lg border border-blue-600 bg-blue-600 px-6 py-3 text-base font-semibold text-white transition-colors duration-200 hover:bg-blue-700"
+              onClick={() => startNewTest()}
+            >
+              Iniciar Test
             </button>
           </div>
         </div>
+
       </main>
+      {taskModal && (
+        <TaskModal
+        onChange={(e) => setDescription(e.target.value)}
+        value={description}
+        disabled={description === "" ? true : false}
+        url={picturesTask[index].url}
+        onClick={nextImage}
+        onClose={cancelTask}
+        buttonText={finishTask ? "Finalizar" : "Siguiente"}
+        />
+      )}
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={isOpen}
+        onClose={closeConfirm}
+        onConfirm={handleConfirmLogout}
+        title={data?.title}
+        message={data?.message}
+        type={data?.type}
+        confirmText="Cerrar Sesión"
+        cancelText="Cancelar"
+      />
     </div>
+    
   );
 }
 
 export default PacienteDashboard;
+

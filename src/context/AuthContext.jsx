@@ -50,7 +50,19 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = (userData) => {
-    setUser(userData);
+    // Normalizar los datos del usuario para que sean consistentes
+    const normalizedUser = {
+      id: userData.usuario_id || userData.id,
+      email: userData.correo || userData.email,
+      nombre: userData.nombre,
+      tipo_usuario: userData.tipo_usuario,
+      timestamp: Date.now(),
+    };
+
+    // Guardar en localStorage para persistencia
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
+
+    setUser(normalizedUser);
   };
 
   const logout = async () => {
