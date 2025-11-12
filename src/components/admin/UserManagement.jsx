@@ -294,6 +294,7 @@ function UserManagement() {
                         </svg>
                       </button>
                       <button
+                        data-testid="editing-pen"
                         onClick={() => handleEditUser(user)}
                         className="text-green-600 hover:text-green-900"
                         title="Editar"

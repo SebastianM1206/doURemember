@@ -329,6 +329,7 @@ function UserTableView({ users, loading, onReload, userType, title }) {
                           </svg>
                         </button>
                         <button
+                          data-testid="delete-bucket"
                           onClick={() => handleDeleteUser(user.id)}
                           className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
                           title="Eliminar"

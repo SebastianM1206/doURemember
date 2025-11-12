@@ -143,6 +143,7 @@ function ConfirmDialog({
           {/* Actions */}
           <div className="bg-gray-50 px-6 py-4 flex flex-row-reverse gap-3">
             <button
+            data-testid="confirm-dialog-modal"
               type="button"
               onClick={handleConfirm}
               className={`inline-flex justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${buttonColor}`}
