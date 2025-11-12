@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
 import { getAllUsers } from "../../services/userService";
 import UserTableView from "./UserTableView";
+import { useConfirm } from "../../hooks/useConfirm";
+import ConfirmDialog from "../common/ConfirmDialog";
+import { toast } from "react-toastify";
 
 function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const deactivateConfirm = useConfirm();
+  const reactivateConfirm = useConfirm();
 
   useEffect(() => {
     loadUsers();
@@ -68,26 +73,36 @@ function UserManagement() {
     setShowModal(true);
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm("¿Estás seguro de desactivar este usuario?")) {
-      const { error } = await deleteUser(userId);
-      if (!error) {
-        loadUsers();
-      } else {
-        alert("Error al desactivar usuario");
-      }
-    }
+  const handleDeleteUser = (userId) => {
+    deactivateConfirm.openConfirm(userId);
   };
 
-  const handleReactivateUser = async (userId) => {
-    if (window.confirm("¿Estás seguro de reactivar este usuario?")) {
-      const { error } = await reactivateUser(userId);
-      if (!error) {
-        loadUsers();
-      } else {
-        alert("Error al reactivar usuario");
-      }
+  const confirmDeactivate = async () => {
+    const userId = deactivateConfirm.data;
+    const { error } = await deleteUser(userId);
+    if (!error) {
+      toast.success("Usuario desactivado correctamente");
+      loadUsers();
+    } else {
+      toast.error("Error al desactivar usuario");
     }
+    deactivateConfirm.closeConfirm();
+  };
+
+  const handleReactivateUser = (userId) => {
+    reactivateConfirm.openConfirm(userId);
+  };
+
+  const confirmReactivate = async () => {
+    const userId = reactivateConfirm.data;
+    const { error } = await reactivateUser(userId);
+    if (!error) {
+      toast.success("Usuario reactivado correctamente");
+      loadUsers();
+    } else {
+      toast.error("Error al reactivar usuario");
+    }
+    reactivateConfirm.closeConfirm();
   };
 
   const handleModalClose = (shouldReload) => {
@@ -371,6 +386,29 @@ function UserManagement() {
           onClose={handleModalClose}
         />
       )}
+
+      {/* Confirm Dialogs */}
+      <ConfirmDialog
+        isOpen={deactivateConfirm.isOpen}
+        onClose={deactivateConfirm.closeConfirm}
+        onConfirm={confirmDeactivate}
+        title="Desactivar Usuario"
+        message="¿Estás seguro de desactivar este usuario? Podrás reactivarlo después."
+        confirmText="Desactivar"
+        cancelText="Cancelar"
+        type="warning"
+      />
+
+      <ConfirmDialog
+        isOpen={reactivateConfirm.isOpen}
+        onClose={reactivateConfirm.closeConfirm}
+        onConfirm={confirmReactivate}
+        title="Reactivar Usuario"
+        message="¿Estás seguro de reactivar este usuario?"
+        confirmText="Reactivar"
+        cancelText="Cancelar"
+        type="info"
+      />
     </div>
   );
 }

@@ -2,15 +2,46 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getReportsForCaregiver } from "../../services/reportsService";
+import { toast } from "react-toastify";
 
 const metricConfig = [
-  { key: "topicalConsistency", label: "Consistencia temática", tone: "blue", inverse: false },
+  {
+    key: "topicalConsistency",
+    label: "Consistencia temática",
+    tone: "blue",
+    inverse: false,
+  },
   { key: "logicalFlow", label: "Flujo lógico", tone: "indigo", inverse: false },
-  { key: "linguisticComplexity", label: "Complejidad lingüística", tone: "violet", inverse: false },
-  { key: "presenceEntities", label: "Mención de entidades", tone: "sky", inverse: false },
-  { key: "accuracyDetails", label: "Precisión en detalles", tone: "emerald", inverse: false },
-  { key: "omissionRate", label: "Tasa de omisión", tone: "rose", inverse: true },
-  { key: "comissionRate", label: "Tasa de comisión", tone: "amber", inverse: true },
+  {
+    key: "linguisticComplexity",
+    label: "Complejidad lingüística",
+    tone: "violet",
+    inverse: false,
+  },
+  {
+    key: "presenceEntities",
+    label: "Mención de entidades",
+    tone: "sky",
+    inverse: false,
+  },
+  {
+    key: "accuracyDetails",
+    label: "Precisión en detalles",
+    tone: "emerald",
+    inverse: false,
+  },
+  {
+    key: "omissionRate",
+    label: "Tasa de omisión",
+    tone: "rose",
+    inverse: true,
+  },
+  {
+    key: "comissionRate",
+    label: "Tasa de comisión",
+    tone: "amber",
+    inverse: true,
+  },
 ];
 
 const SCALE_MIN = 1;
@@ -128,9 +159,7 @@ const formatScore = (value) => normalizeScore(value).toFixed(1);
 
 const scoreToPercent = (value) => {
   if (SCALE_RANGE <= 0) return 0;
-  return Math.round(
-    ((normalizeScore(value) - SCALE_MIN) / SCALE_RANGE) * 100
-  );
+  return Math.round(((normalizeScore(value) - SCALE_MIN) / SCALE_RANGE) * 100);
 };
 
 const getXFromIndex = (index, total) => {
@@ -145,8 +174,7 @@ const getXFromIndex = (index, total) => {
 const getYFromValue = (value) => {
   const { height, paddingY } = CHART_DIMENSIONS;
   const innerHeight = height - paddingY * 2;
-  const ratio =
-    (normalizeScore(value) - SCALE_MIN) / (SCALE_RANGE || 1);
+  const ratio = (normalizeScore(value) - SCALE_MIN) / (SCALE_RANGE || 1);
   return height - paddingY - ratio * innerHeight;
 };
 
@@ -220,9 +248,7 @@ function CuidadorReportes() {
 
     const result = {};
     Object.entries(totals).forEach(([key, value]) => {
-      result[key] = Number(
-        normalizeScore(value / reports.length).toFixed(1)
-      );
+      result[key] = Number(normalizeScore(value / reports.length).toFixed(1));
     });
     return result;
   }, [reports]);
@@ -278,7 +304,9 @@ function CuidadorReportes() {
 
   const linePath = useMemo(() => {
     if (!trendPoints.length) return "";
-    return `M ${trendPoints.map((point) => `${point.x} ${point.y}`).join(" L ")}`;
+    return `M ${trendPoints
+      .map((point) => `${point.x} ${point.y}`)
+      .join(" L ")}`;
   }, [trendPoints]);
 
   const areaPath = useMemo(() => {
@@ -339,9 +367,7 @@ function CuidadorReportes() {
           top: `${(hoveredPoint.y / CHART_DIMENSIONS.height) * 100}%`,
         }
       : null;
-  const hoveredPalette = hoveredPoint
-    ? getTypeColor(hoveredPoint.tipo)
-    : null;
+  const hoveredPalette = hoveredPoint ? getTypeColor(hoveredPoint.tipo) : null;
 
   const sanitizeForFilename = (value) =>
     value
@@ -420,7 +446,7 @@ function CuidadorReportes() {
       URL.revokeObjectURL(link.href);
     } catch (exportError) {
       console.error("Error exportando reportes:", exportError);
-      alert("No se pudo exportar el reporte. Intenta nuevamente.");
+      toast.error("No se pudo exportar el reporte. Intenta nuevamente.");
     } finally {
       setExporting(false);
     }
@@ -523,208 +549,231 @@ function CuidadorReportes() {
                     {lastUpdated ? formatDate(lastUpdated) : "Sin registros"}
                   </p>
                 </div>
-            </div>
-          </div>
-
-          {trendData.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Tendencia del puntaje
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    Evolución del puntaje global en escala 1-5
-                  </p>
-                </div>
-                {benchmarkValue && benchmarkReport && (
-                  <div
-                    className={`px-4 py-2 rounded-xl text-sm font-medium border ${benchmarkPalette.chipBg} ${benchmarkPalette.chipText} ${benchmarkPalette.chipBorder}`}
-                  >
-                    Benchmark Inical: {benchmarkValue.toFixed(1)} / {SCALE_MAX}
-                  </div>
-                )}
               </div>
+            </div>
 
-              <div
-                className="relative w-full h-72"
-                onMouseLeave={() => setHoveredPoint(null)}
-              >
-                <svg
-                  viewBox={`0 0 ${CHART_DIMENSIONS.width} ${CHART_DIMENSIONS.height}`}
-                  className="w-full h-full"
-                  role="img"
-                  aria-label="Gráfico de tendencia del puntaje global"
+            {trendData.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Tendencia del puntaje
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      Evolución del puntaje global en escala 1-5
+                    </p>
+                  </div>
+                  {benchmarkValue && benchmarkReport && (
+                    <div
+                      className={`px-4 py-2 rounded-xl text-sm font-medium border ${benchmarkPalette.chipBg} ${benchmarkPalette.chipText} ${benchmarkPalette.chipBorder}`}
+                    >
+                      Benchmark Inical: {benchmarkValue.toFixed(1)} /{" "}
+                      {SCALE_MAX}
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  className="relative w-full h-72"
+                  onMouseLeave={() => setHoveredPoint(null)}
                 >
-                  <defs>
-                    <linearGradient id="trendGradient" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="#2563eb" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <rect
-                    x="0"
-                    y="0"
-                    width={CHART_DIMENSIONS.width}
-                    height={CHART_DIMENSIONS.height}
-                    fill="transparent"
-                  />
-
-                  <g>
-                    {yTicks.map((tick) => (
-                      <g key={`tick-${tick.value}`}>
-                        <line
-                          x1={CHART_DIMENSIONS.paddingX}
-                          x2={CHART_DIMENSIONS.width - CHART_DIMENSIONS.paddingX}
-                          y1={tick.y}
-                          y2={tick.y}
-                          stroke="#e2e8f0"
-                          strokeWidth="1"
-                        />
-                        <text
-                          x={CHART_DIMENSIONS.paddingX - 12}
-                          y={tick.y + 4}
-                          textAnchor="end"
-                          fontSize="12"
-                          fill="#94a3b8"
-                        >
-                          {tick.value}
-                        </text>
-                      </g>
-                    ))}
-                    <line
-                      x1={CHART_DIMENSIONS.paddingX}
-                      x2={CHART_DIMENSIONS.paddingX}
-                      y1={CHART_DIMENSIONS.paddingY}
-                      y2={baselineY}
-                      stroke="#cbd5f5"
-                      strokeWidth="1.5"
-                    />
-                    <line
-                      x1={CHART_DIMENSIONS.paddingX}
-                      x2={CHART_DIMENSIONS.width - CHART_DIMENSIONS.paddingX}
-                      y1={baselineY}
-                      y2={baselineY}
-                      stroke="#cbd5f5"
-                      strokeWidth="1.5"
-                    />
-                  </g>
-
-                  {benchmarkValue && benchmarkY !== null && (
-                    <>
-                      <line
-                        x1={CHART_DIMENSIONS.paddingX}
-                        x2={CHART_DIMENSIONS.width - CHART_DIMENSIONS.paddingX}
-                        y1={benchmarkY}
-                        y2={benchmarkY}
-                        stroke="#94a3b8"
-                        strokeDasharray="6 6"
-                        strokeWidth="1.5"
-                      />
-                      <text
-                        x={CHART_DIMENSIONS.width - CHART_DIMENSIONS.paddingX}
-                        y={benchmarkY - 6}
-                        textAnchor="end"
-                        fontSize="12"
-                        fill="#475569"
+                  <svg
+                    viewBox={`0 0 ${CHART_DIMENSIONS.width} ${CHART_DIMENSIONS.height}`}
+                    className="w-full h-full"
+                    role="img"
+                    aria-label="Gráfico de tendencia del puntaje global"
+                  >
+                    <defs>
+                      <linearGradient
+                        id="trendGradient"
+                        x1="0"
+                        x2="0"
+                        y1="0"
+                        y2="1"
                       >
-                        Benchmark Inical ({benchmarkValue.toFixed(1)})
-                      </text>
-                    </>
-                  )}
-
-                  {areaPath && (
-                    <path
-                      d={areaPath}
-                      fill="url(#trendGradient)"
-                      stroke="none"
+                        <stop
+                          offset="0%"
+                          stopColor="#2563eb"
+                          stopOpacity="0.25"
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="#2563eb"
+                          stopOpacity="0"
+                        />
+                      </linearGradient>
+                    </defs>
+                    <rect
+                      x="0"
+                      y="0"
+                      width={CHART_DIMENSIONS.width}
+                      height={CHART_DIMENSIONS.height}
+                      fill="transparent"
                     />
-                  )}
 
-                  {linePath && (
-                    <path
-                      d={linePath}
-                      fill="none"
-                      stroke="#2563eb"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  )}
-
-                  {trendPoints.map((point) => (
-                    <g key={point.id}>
-                      <circle
-                        cx={point.x}
-                        cy={point.y}
-                        r={hoveredPoint?.id === point.id ? 7 : 5}
-                        fill={hoveredPoint?.id === point.id ? "#1e40af" : "#1d4ed8"}
-                        stroke="#fff"
-                        strokeWidth="2"
-                        onMouseEnter={() => setHoveredPoint(point)}
-                        onFocus={() => setHoveredPoint(point)}
-                        onBlur={() => setHoveredPoint(null)}
-                        tabIndex={0}
-                      />
-                    </g>
-                  ))}
-
-                  {xTicks.length > 0 && (
                     <g>
-                      {xTicks.map((tick) => (
-                        <g key={tick.key}>
+                      {yTicks.map((tick) => (
+                        <g key={`tick-${tick.value}`}>
                           <line
-                            x1={tick.x}
-                            x2={tick.x}
-                            y1={baselineY}
-                            y2={baselineY + 6}
-                            stroke="#cbd5f5"
-                            strokeWidth="1.5"
+                            x1={CHART_DIMENSIONS.paddingX}
+                            x2={
+                              CHART_DIMENSIONS.width - CHART_DIMENSIONS.paddingX
+                            }
+                            y1={tick.y}
+                            y2={tick.y}
+                            stroke="#e2e8f0"
+                            strokeWidth="1"
                           />
                           <text
-                            x={tick.x}
-                            y={baselineY + 20}
-                            textAnchor="middle"
+                            x={CHART_DIMENSIONS.paddingX - 12}
+                            y={tick.y + 4}
+                            textAnchor="end"
                             fontSize="12"
                             fill="#94a3b8"
                           >
-                            {tick.label}
+                            {tick.value}
                           </text>
                         </g>
                       ))}
+                      <line
+                        x1={CHART_DIMENSIONS.paddingX}
+                        x2={CHART_DIMENSIONS.paddingX}
+                        y1={CHART_DIMENSIONS.paddingY}
+                        y2={baselineY}
+                        stroke="#cbd5f5"
+                        strokeWidth="1.5"
+                      />
+                      <line
+                        x1={CHART_DIMENSIONS.paddingX}
+                        x2={CHART_DIMENSIONS.width - CHART_DIMENSIONS.paddingX}
+                        y1={baselineY}
+                        y2={baselineY}
+                        stroke="#cbd5f5"
+                        strokeWidth="1.5"
+                      />
                     </g>
-                  )}
-                </svg>
 
-                {hoveredPoint && (
-                  <div
-                    className="absolute pointer-events-none bg-white shadow-lg border border-gray-100 rounded-xl px-4 py-3 min-w-[160px]"
-                    style={{
-                      left: tooltipStyle.left,
-                      top: tooltipStyle.top,
-                      transform: "translate(-50%, -120%)",
-                    }}
-                  >
-                    <p
-                      className={`text-xs uppercase tracking-wide font-semibold ${
-                        hoveredPalette?.chipText ?? "text-gray-500"
-                      }`}
+                    {benchmarkValue && benchmarkY !== null && (
+                      <>
+                        <line
+                          x1={CHART_DIMENSIONS.paddingX}
+                          x2={
+                            CHART_DIMENSIONS.width - CHART_DIMENSIONS.paddingX
+                          }
+                          y1={benchmarkY}
+                          y2={benchmarkY}
+                          stroke="#94a3b8"
+                          strokeDasharray="6 6"
+                          strokeWidth="1.5"
+                        />
+                        <text
+                          x={CHART_DIMENSIONS.width - CHART_DIMENSIONS.paddingX}
+                          y={benchmarkY - 6}
+                          textAnchor="end"
+                          fontSize="12"
+                          fill="#475569"
+                        >
+                          Benchmark Inical ({benchmarkValue.toFixed(1)})
+                        </text>
+                      </>
+                    )}
+
+                    {areaPath && (
+                      <path
+                        d={areaPath}
+                        fill="url(#trendGradient)"
+                        stroke="none"
+                      />
+                    )}
+
+                    {linePath && (
+                      <path
+                        d={linePath}
+                        fill="none"
+                        stroke="#2563eb"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    )}
+
+                    {trendPoints.map((point) => (
+                      <g key={point.id}>
+                        <circle
+                          cx={point.x}
+                          cy={point.y}
+                          r={hoveredPoint?.id === point.id ? 7 : 5}
+                          fill={
+                            hoveredPoint?.id === point.id
+                              ? "#1e40af"
+                              : "#1d4ed8"
+                          }
+                          stroke="#fff"
+                          strokeWidth="2"
+                          onMouseEnter={() => setHoveredPoint(point)}
+                          onFocus={() => setHoveredPoint(point)}
+                          onBlur={() => setHoveredPoint(null)}
+                          tabIndex={0}
+                        />
+                      </g>
+                    ))}
+
+                    {xTicks.length > 0 && (
+                      <g>
+                        {xTicks.map((tick) => (
+                          <g key={tick.key}>
+                            <line
+                              x1={tick.x}
+                              x2={tick.x}
+                              y1={baselineY}
+                              y2={baselineY + 6}
+                              stroke="#cbd5f5"
+                              strokeWidth="1.5"
+                            />
+                            <text
+                              x={tick.x}
+                              y={baselineY + 20}
+                              textAnchor="middle"
+                              fontSize="12"
+                              fill="#94a3b8"
+                            >
+                              {tick.label}
+                            </text>
+                          </g>
+                        ))}
+                      </g>
+                    )}
+                  </svg>
+
+                  {hoveredPoint && (
+                    <div
+                      className="absolute pointer-events-none bg-white shadow-lg border border-gray-100 rounded-xl px-4 py-3 min-w-[160px]"
+                      style={{
+                        left: tooltipStyle.left,
+                        top: tooltipStyle.top,
+                        transform: "translate(-50%, -120%)",
+                      }}
                     >
-                      {formatReportType(hoveredPoint.tipo)}
-                    </p>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {hoveredPoint.value.toFixed(1)} / {SCALE_MAX}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {hoveredPoint.fullLabel}
-                    </p>
-                  </div>
-                )}
+                      <p
+                        className={`text-xs uppercase tracking-wide font-semibold ${
+                          hoveredPalette?.chipText ?? "text-gray-500"
+                        }`}
+                      >
+                        {formatReportType(hoveredPoint.tipo)}
+                      </p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {hoveredPoint.value.toFixed(1)} / {SCALE_MAX}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {hoveredPoint.fullLabel}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {reports.length > 0 && (
+            {reports.length > 0 && (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {metricConfig.map((metric) => {
                   const averageValue = averages?.[metric.key] ?? SCALE_MIN;
@@ -743,7 +792,8 @@ function CuidadorReportes() {
                     rose: "bg-rose-500 text-rose-600",
                     amber: "bg-amber-500 text-amber-600",
                   };
-                  const toneClass = colorMap[metric.tone] || "bg-gray-500 text-gray-600";
+                  const toneClass =
+                    colorMap[metric.tone] || "bg-gray-500 text-gray-600";
                   return (
                     <div
                       key={metric.key}
@@ -751,10 +801,16 @@ function CuidadorReportes() {
                     >
                       <div className="flex items-center justify-between text-sm text-gray-500">
                         <p>{metric.label}</p>
-                        <span>{metric.inverse ? "Menor es mejor" : "Mayor es mejor"}</span>
+                        <span>
+                          {metric.inverse ? "Menor es mejor" : "Mayor es mejor"}
+                        </span>
                       </div>
                       <div>
-                        <p className={`text-3xl font-semibold ${toneClass.split(" ")[1]}`}>
+                        <p
+                          className={`text-3xl font-semibold ${
+                            toneClass.split(" ")[1]
+                          }`}
+                        >
                           {displayAverage}
                           <span className="ml-1 text-base font-normal text-gray-500">
                             / {SCALE_MAX}
@@ -771,7 +827,9 @@ function CuidadorReportes() {
                           </div>
                           <div className="w-full bg-gray-100 rounded-full h-2">
                             <div
-                              className={`${toneClass.split(" ")[0]} h-2 rounded-full transition-all`}
+                              className={`${
+                                toneClass.split(" ")[0]
+                              } h-2 rounded-full transition-all`}
                               style={{
                                 width: `${progressPercent}%`,
                               }}
@@ -882,47 +940,49 @@ function CuidadorReportes() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 text-gray-900">
-                      {filteredReports.map((report) => {
-                        const palette = getTypeColor(report.tipo);
-                        return (
-                          <tr key={report.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              {formatDate(report.fecha)}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span
-                                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border ${palette.chipBg} ${palette.chipText} ${palette.chipBorder}`}
-                              >
-                                {formatReportType(report.tipo)}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {formatScore(report.metrics.topicalConsistency)}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {formatScore(report.metrics.logicalFlow)}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {formatScore(report.metrics.linguisticComplexity)}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {formatScore(report.metrics.presenceEntities)}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {formatScore(report.metrics.accuracyDetails)}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {formatScore(report.metrics.omissionRate)}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {formatScore(report.metrics.comissionRate)}
-                            </td>
-                            <td className="px-4 py-3 text-center font-semibold">
-                              {formatScore(report.globalScore)}
-                            </td>
-                          </tr>
-                        );
-                      })}
+                        {filteredReports.map((report) => {
+                          const palette = getTypeColor(report.tipo);
+                          return (
+                            <tr key={report.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                {formatDate(report.fecha)}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span
+                                  className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border ${palette.chipBg} ${palette.chipText} ${palette.chipBorder}`}
+                                >
+                                  {formatReportType(report.tipo)}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {formatScore(report.metrics.topicalConsistency)}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {formatScore(report.metrics.logicalFlow)}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {formatScore(
+                                  report.metrics.linguisticComplexity
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {formatScore(report.metrics.presenceEntities)}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {formatScore(report.metrics.accuracyDetails)}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {formatScore(report.metrics.omissionRate)}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {formatScore(report.metrics.comissionRate)}
+                              </td>
+                              <td className="px-4 py-3 text-center font-semibold">
+                                {formatScore(report.globalScore)}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

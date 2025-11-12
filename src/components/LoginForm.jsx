@@ -65,9 +65,7 @@ function LoginForm() {
 
         {/* Welcome Section */}
         <div className="space-y-2">
-          <h3 className="text-2xl font-bold text-gray-900">
-            ¡Bienvenido de vuelta!
-          </h3>
+          <h3 className="text-2xl font-bold text-gray-900">¡Hola de nuevo!</h3>
         </div>
 
         {/* Login Form */}

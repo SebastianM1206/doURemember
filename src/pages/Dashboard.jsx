@@ -1,15 +1,21 @@
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useConfirm } from "../hooks/useConfirm";
+import ConfirmDialog from "../components/common/ConfirmDialog";
 
 function Dashboard({ tipo }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const logoutConfirm = useConfirm();
 
-  const handleLogout = async () => {
-    if (window.confirm("¿Estás seguro de que quieres cerrar sesión?")) {
-      await logout();
-      navigate("/login");
-    }
+  const handleLogoutClick = () => {
+    logoutConfirm.openConfirm();
+  };
+
+  const confirmLogout = async () => {
+    await logout();
+    navigate("/login");
+    logoutConfirm.closeConfirm();
   };
 
   // Contenido específico según el tipo de usuario
@@ -160,7 +166,7 @@ function Dashboard({ tipo }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">DoURemember</h1>
           <button
-            onClick={handleLogout}
+            onClick={handleLogoutClick}
             className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
           >
             Cerrar Sesión
@@ -202,6 +208,18 @@ function Dashboard({ tipo }) {
           {getContentByType()}
         </div>
       </main>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={logoutConfirm.isOpen}
+        onClose={logoutConfirm.closeConfirm}
+        onConfirm={confirmLogout}
+        title="Cerrar Sesión"
+        message="¿Estás seguro de que quieres cerrar sesión?"
+        confirmText="Cerrar Sesión"
+        cancelText="Cancelar"
+        type="warning"
+      />
     </div>
   );
 }

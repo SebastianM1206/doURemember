@@ -18,9 +18,9 @@ function LoginHero() {
           {/* Welcome Text */}
           <div className="space-y-4">
             <h1 className="text-5xl font-bold leading-tight">
-              Hello
+              Bienvenido a
               <br />
-              doURemember! 👋
+              DoURemember! 👋
             </h1>
             <p className="text-lg text-blue-100 max-w-md leading-relaxed">
               Sistema de apoyo cognitivo para el monitoreo y seguimiento de
@@ -32,7 +32,7 @@ function LoginHero() {
 
         {/* Footer */}
         <div className="text-blue-200 text-sm">
-          © 2025 doURemember. Todos los derechos reservados.
+          © 2025 DoURemember. Todos los derechos reservados.
         </div>
       </div>
     </div>

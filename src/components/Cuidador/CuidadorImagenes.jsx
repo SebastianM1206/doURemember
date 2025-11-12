@@ -8,7 +8,9 @@ import {
 } from "../../services/imageService.js";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../supabase/supabaseClient.js";
-
+import { useConfirm } from "../../hooks/useConfirm";
+import ConfirmDialog from "../common/ConfirmDialog";
+import { toast } from "react-toastify";
 
 const emptyForm = {
   descripcion: "",
@@ -18,6 +20,7 @@ const emptyForm = {
 function CuidadorImagenes() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const deleteConfirm = useConfirm();
   const [images, setImages] = useState([]);
   const [formData, setFormData] = useState({ ...emptyForm });
   const [loading, setLoading] = useState(true);
@@ -90,7 +93,7 @@ function CuidadorImagenes() {
     setError("");
 
     //Obtenemos el grupo actual
-    
+
     //Consultamos el grupoId asociado al usuario
     const { data: grupoData, error: grupoError } = await supabase
       .from("grupos")
@@ -131,19 +134,23 @@ function CuidadorImagenes() {
   }
 
   async function handleDelete(imageId) {
-    const confirmed = window.confirm(
-      "Esta accion eliminara la imagen. Deseas continuar?"
-    );
-    if (!confirmed) return;
+    deleteConfirm.openConfirm(imageId);
+  }
 
+  async function confirmDelete() {
+    const imageId = deleteConfirm.data;
     try {
       await deleteImage(imageId);
       setImages((prev) => prev.filter((img) => img.id !== imageId));
       if (editingId === imageId) {
         resetForm();
       }
+      toast.success("Imagen eliminada correctamente");
     } catch (err) {
       setError(err.message || "No se pudo eliminar la imagen");
+      toast.error(err.message || "No se pudo eliminar la imagen");
+    } finally {
+      deleteConfirm.closeConfirm();
     }
   }
 
@@ -284,7 +291,10 @@ function CuidadorImagenes() {
 
           {/* Listado */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col" style={{ maxHeight: 'calc(100vh - 12rem)' }}>
+            <div
+              className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col"
+              style={{ maxHeight: "calc(100vh - 12rem)" }}
+            >
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">
@@ -303,91 +313,97 @@ function CuidadorImagenes() {
                   </div>
                 ) : images.length === 0 ? (
                   <div className="p-8 text-center text-sm text-gray-500">
-                    Aun no se han agregado imagenes. Usa el formulario para crear
-                    la primera.
+                    Aun no se han agregado imagenes. Usa el formulario para
+                    crear la primera.
                   </div>
                 ) : (
                   <ul className="divide-y divide-gray-100">
-                  {images.map((image) => (
-                    <li
-                      key={image.id}
-                      className="p-6 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex flex-col lg:flex-row gap-6">
-                        {/* Imagen */}
-                        <div className="flex-shrink-0">
-                          <div className="h-32 w-32 overflow-hidden rounded-xl bg-gray-100 flex items-center justify-center shadow-sm">
-                            {image.url ? (
-                              <img
-                                src={image.url}
-                                alt={image.descripcion || "Imagen"}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-xs text-gray-400 text-center px-2">
-                                Sin vista previa
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Contenido */}
-                        <div className="flex-1 min-w-0 flex flex-col">
-                          {/* Descripción */}
-                          <div className="flex-1">
-                            <div className="relative">
-                              <p
-                                className={`text-sm text-gray-900 leading-relaxed whitespace-pre-wrap break-words transition-all duration-300 ${
-                                  expandedDescriptions[image.id]
-                                    ? ""
-                                    : "line-clamp-3"
-                                }`}
-                              >
-                                {image.descripcion || "Sin descripcion"}
-                              </p>
-                              {image.descripcion && image.descripcion.length > 150 && (
-                                <button
-                                  onClick={() => toggleDescription(image.id)}
-                                  className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                                >
-                                  {expandedDescriptions[image.id]
-                                    ? "Ver menos"
-                                    : "Ver más"}
-                                </button>
+                    {images.map((image) => (
+                      <li
+                        key={image.id}
+                        className="p-6 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex flex-col lg:flex-row gap-6">
+                          {/* Imagen */}
+                          <div className="flex-shrink-0">
+                            <div className="h-32 w-32 overflow-hidden rounded-xl bg-gray-100 flex items-center justify-center shadow-sm">
+                              {image.url ? (
+                                <img
+                                  src={image.url}
+                                  alt={image.descripcion || "Imagen"}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-xs text-gray-400 text-center px-2">
+                                  Sin vista previa
+                                </span>
                               )}
                             </div>
                           </div>
 
-                          {/* Footer con fecha y acciones */}
-                          <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-gray-100">
-                            {image.created_at && (
-                              <p className="text-xs text-gray-400">
-                                Registrada: {new Date(image.created_at).toLocaleDateString('es-ES', { 
-                                  year: 'numeric', 
-                                  month: 'long', 
-                                  day: 'numeric' 
-                                })}
-                              </p>
-                            )}
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => startEdit(image)}
-                                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all"
-                              >
-                                Editar
-                              </button>
-                              <button
-                                onClick={() => handleDelete(image.id)}
-                                className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 hover:border-red-300 transition-all"
-                              >
-                                Eliminar
-                              </button>
+                          {/* Contenido */}
+                          <div className="flex-1 min-w-0 flex flex-col">
+                            {/* Descripción */}
+                            <div className="flex-1">
+                              <div className="relative">
+                                <p
+                                  className={`text-sm text-gray-900 leading-relaxed whitespace-pre-wrap break-words transition-all duration-300 ${
+                                    expandedDescriptions[image.id]
+                                      ? ""
+                                      : "line-clamp-3"
+                                  }`}
+                                >
+                                  {image.descripcion || "Sin descripcion"}
+                                </p>
+                                {image.descripcion &&
+                                  image.descripcion.length > 150 && (
+                                    <button
+                                      onClick={() =>
+                                        toggleDescription(image.id)
+                                      }
+                                      className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                                    >
+                                      {expandedDescriptions[image.id]
+                                        ? "Ver menos"
+                                        : "Ver más"}
+                                    </button>
+                                  )}
+                              </div>
+                            </div>
+
+                            {/* Footer con fecha y acciones */}
+                            <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-gray-100">
+                              {image.created_at && (
+                                <p className="text-xs text-gray-400">
+                                  Registrada:{" "}
+                                  {new Date(
+                                    image.created_at
+                                  ).toLocaleDateString("es-ES", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })}
+                                </p>
+                              )}
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => startEdit(image)}
+                                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white hover:shadow-sm transition-all"
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(image.id)}
+                                  className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 hover:border-red-300 transition-all"
+                                >
+                                  Eliminar
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </li>
-                  ))}
+                      </li>
+                    ))}
                   </ul>
                 )}
               </div>
@@ -395,6 +411,18 @@ function CuidadorImagenes() {
           </div>
         </div>
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={deleteConfirm.closeConfirm}
+        onConfirm={confirmDelete}
+        title="Eliminar Imagen"
+        message="Esta acción eliminará la imagen permanentemente. ¿Deseas continuar?"
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        type="danger"
+      />
     </div>
   );
 }

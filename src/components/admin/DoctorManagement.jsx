@@ -5,6 +5,9 @@ import {
   reactivateUser,
 } from "../../services/userService";
 import UserModal from "./UserModal";
+import { useConfirm } from "../../hooks/useConfirm";
+import ConfirmDialog from "../common/ConfirmDialog";
+import { toast } from "react-toastify";
 
 function DoctorManagement() {
   const [doctors, setDoctors] = useState([]);
@@ -13,6 +16,8 @@ function DoctorManagement() {
   const [showModal, setShowModal] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [modalMode, setModalMode] = useState("create");
+  const deactivateConfirm = useConfirm();
+  const reactivateConfirm = useConfirm();
 
   useEffect(() => {
     loadDoctors();
@@ -53,26 +58,36 @@ function DoctorManagement() {
     setShowModal(true);
   };
 
-  const handleDeleteDoctor = async (doctorId) => {
-    if (window.confirm("¿Estás seguro de desactivar este médico?")) {
-      const { error } = await deleteUser(doctorId);
-      if (!error) {
-        loadDoctors();
-      } else {
-        alert("Error al desactivar médico");
-      }
-    }
+  const handleDeleteDoctor = (doctorId) => {
+    deactivateConfirm.openConfirm(doctorId);
   };
 
-  const handleReactivateDoctor = async (doctorId) => {
-    if (window.confirm("¿Estás seguro de reactivar este médico?")) {
-      const { error } = await reactivateUser(doctorId);
-      if (!error) {
-        loadDoctors();
-      } else {
-        alert("Error al reactivar médico");
-      }
+  const confirmDeactivate = async () => {
+    const doctorId = deactivateConfirm.data;
+    const { error } = await deleteUser(doctorId);
+    if (!error) {
+      toast.success("Médico desactivado correctamente");
+      loadDoctors();
+    } else {
+      toast.error("Error al desactivar médico");
     }
+    deactivateConfirm.closeConfirm();
+  };
+
+  const handleReactivateDoctor = (doctorId) => {
+    reactivateConfirm.openConfirm(doctorId);
+  };
+
+  const confirmReactivate = async () => {
+    const doctorId = reactivateConfirm.data;
+    const { error } = await reactivateUser(doctorId);
+    if (!error) {
+      toast.success("Médico reactivado correctamente");
+      loadDoctors();
+    } else {
+      toast.error("Error al reactivar médico");
+    }
+    reactivateConfirm.closeConfirm();
   };
 
   const handleModalClose = (shouldReload) => {
@@ -334,6 +349,29 @@ function DoctorManagement() {
           defaultType="medico"
         />
       )}
+
+      {/* Confirm Dialogs */}
+      <ConfirmDialog
+        isOpen={deactivateConfirm.isOpen}
+        onClose={deactivateConfirm.closeConfirm}
+        onConfirm={confirmDeactivate}
+        title="Desactivar Médico"
+        message="¿Estás seguro de desactivar este médico? Podrás reactivarlo después."
+        confirmText="Desactivar"
+        cancelText="Cancelar"
+        type="warning"
+      />
+
+      <ConfirmDialog
+        isOpen={reactivateConfirm.isOpen}
+        onClose={reactivateConfirm.closeConfirm}
+        onConfirm={confirmReactivate}
+        title="Reactivar Médico"
+        message="¿Estás seguro de reactivar este médico?"
+        confirmText="Reactivar"
+        cancelText="Cancelar"
+        type="info"
+      />
     </div>
   );
 }

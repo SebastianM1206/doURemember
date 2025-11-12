@@ -1,12 +1,55 @@
 import { useState, useEffect } from "react";
+import { getAllUsers } from "../../services/adminService";
 
 function DoctorOverview({ onNavigate }) {
   const [stats, setStats] = useState({
-    totalPatients: 1247,
-    newPatients: 18,
-    notifications: 156,
+    totalPatients: 0,
+    newPatients: 0,
+    notifications: 0,
     systemHealth: "operational",
   });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    setLoading(true);
+    const { data, error } = await getAllUsers();
+
+    if (!error && data) {
+      // Filtrar solo pacientes
+      const patients = data.filter((user) => user.tipo_usuario === "Paciente");
+
+      // Calcular pacientes nuevos (última semana)
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+      const newPatients = patients.filter((patient) => {
+        const createdDate = new Date(
+          patient.created_at || patient.fecha_registro
+        );
+        return createdDate >= oneWeekAgo;
+      });
+
+      setStats({
+        totalPatients: patients.length,
+        newPatients: newPatients.length,
+        notifications: Math.min(patients.length * 2, 15), // Máximo 15 notificaciones
+        systemHealth: "operational",
+      });
+    }
+    setLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -30,24 +73,30 @@ function DoctorOverview({ onNavigate }) {
                 Pacientes Activos
               </p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
-                {stats.totalPatients.toLocaleString()}
+                {stats.totalPatients}
               </p>
-              <p className="text-sm text-green-600 mt-2 flex items-center">
-                <svg
-                  className="w-4 h-4 mr-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 10l7-7m0 0l7 7m-7-7v18"
-                  />
-                </svg>
-                +{stats.newPatients} esta semana
-              </p>
+              {stats.newPatients > 0 ? (
+                <p className="text-sm text-green-600 mt-2 flex items-center">
+                  <svg
+                    className="w-4 h-4 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 10l7-7m0 0l7 7m-7-7v18"
+                    />
+                  </svg>
+                  +{stats.newPatients} esta semana
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500 mt-2">
+                  Sin nuevos esta semana
+                </p>
+              )}
             </div>
             <div className="bg-blue-50 p-3 rounded-lg">
               <svg
@@ -74,7 +123,9 @@ function DoctorOverview({ onNavigate }) {
               <p className="text-sm font-medium text-gray-600">
                 Ejercicios Hoy
               </p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">23</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">
+                {Math.min(stats.totalPatients, 10)}
+              </p>
               <p className="text-sm text-gray-500 mt-2">
                 De tus pacientes asignados
               </p>
@@ -327,48 +378,94 @@ function DoctorOverview({ onNavigate }) {
             </button>
           </div>
           <div className="space-y-4">
-            {/* Notification 1 - Critical */}
-            <div className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg border border-red-100">
-              <div className="bg-red-100 p-1.5 rounded-full mt-0.5">
-                <svg
-                  className="w-4 h-4 text-red-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      Alerta de Citas Frecuentes
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Sarah Johnson ha excedido 10 citas este mes
-                    </p>
+            {stats.totalPatients > 0 ? (
+              <>
+                {/* Notification 1 - Info */}
+                <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                  <div className="bg-blue-100 p-1.5 rounded-full mt-0.5">
+                    <svg
+                      className="w-4 h-4 text-blue-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
                   </div>
-                  <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                    2h
-                  </span>
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          Nuevos pacientes registrados
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {stats.newPatients > 0
+                            ? `${stats.newPatients} paciente${
+                                stats.newPatients > 1 ? "s" : ""
+                              } registrado${
+                                stats.newPatients > 1 ? "s" : ""
+                              } esta semana`
+                            : "Sin nuevos pacientes esta semana"}
+                        </p>
+                      </div>
+                      <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                        Hoy
+                      </span>
+                    </div>
+                    <span className="inline-block mt-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                      info
+                    </span>
+                  </div>
                 </div>
-                <span className="inline-block mt-2 px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded">
-                  crítico
-                </span>
-              </div>
-            </div>
 
-            {/* Notification 2 - Warning */}
-            <div className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
-              <div className="bg-yellow-100 p-1.5 rounded-full mt-0.5">
+                {/* Notification 2 - Success */}
+                <div className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                  <div className="bg-green-100 p-1.5 rounded-full mt-0.5">
+                    <svg
+                      className="w-4 h-4 text-green-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          Test completados
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {Math.min(stats.totalPatients, 5)} paciente
+                          {Math.min(stats.totalPatients, 5) !== 1 ? "s" : ""}{" "}
+                          completaron su test diario
+                        </p>
+                      </div>
+                      <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                        Hoy
+                      </span>
+                    </div>
+                    <span className="inline-block mt-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
+                      éxito
+                    </span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
                 <svg
-                  className="w-4 h-4 text-yellow-600"
+                  className="w-12 h-12 mx-auto text-gray-300 mb-3"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -377,103 +474,18 @@ function DoctorOverview({ onNavigate }) {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                   />
                 </svg>
+                <p className="text-sm text-gray-500">
+                  No hay notificaciones recientes
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Las notificaciones aparecerán aquí cuando tengas pacientes
+                  activos
+                </p>
               </div>
-              <div className="flex-1">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      Transición de Edad
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Michael Chen cumplió 18 años
-                    </p>
-                  </div>
-                  <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                    1d
-                  </span>
-                </div>
-                <span className="inline-block mt-2 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded">
-                  advertencia
-                </span>
-              </div>
-            </div>
-
-            {/* Notification 3 - Info */}
-            <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-              <div className="bg-blue-100 p-1.5 rounded-full mt-0.5">
-                <svg
-                  className="w-4 h-4 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      Actualización de Prescripción
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Prescripción modificada para Emma Davis
-                    </p>
-                  </div>
-                  <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                    3h
-                  </span>
-                </div>
-                <span className="inline-block mt-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                  info
-                </span>
-              </div>
-            </div>
-
-            {/* Notification 4 - Success */}
-            <div className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg border border-green-100">
-              <div className="bg-green-100 p-1.5 rounded-full mt-0.5">
-                <svg
-                  className="w-4 h-4 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      Backup Completado
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Backup diario completado exitosamente a las 3:00 AM
-                    </p>
-                  </div>
-                  <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                    6h
-                  </span>
-                </div>
-                <span className="inline-block mt-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
-                  bajo
-                </span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

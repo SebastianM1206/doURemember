@@ -1,15 +1,21 @@
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useConfirm } from "../hooks/useConfirm";
+import ConfirmDialog from "../components/common/ConfirmDialog";
 
 function CuidadorDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const logoutConfirm = useConfirm();
 
-  const handleLogout = async () => {
-    if (window.confirm("¿Estás seguro de que quieres cerrar sesión?")) {
-      await logout();
-      navigate("/login");
-    }
+  const handleLogoutClick = () => {
+    logoutConfirm.openConfirm();
+  };
+
+  const confirmLogout = async () => {
+    await logout();
+    navigate("/login");
+    logoutConfirm.closeConfirm();
   };
 
   return (
@@ -22,7 +28,7 @@ function CuidadorDashboard() {
             <p className="text-sm text-gray-600">Portal de Cuidador</p>
           </div>
           <button
-            onClick={handleLogout}
+            onClick={handleLogoutClick}
             className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
           >
             Cerrar Sesión
@@ -44,14 +50,10 @@ function CuidadorDashboard() {
 
         {/* Dashboard Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-
           {/* Card: Tareas del Día */}
           <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow duration-200">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Imagenes
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900">Imagenes</h3>
               <div className="bg-blue-100 rounded-full p-3">
                 <svg
                   className="w-6 h-6 text-blue-600"
@@ -118,6 +120,18 @@ function CuidadorDashboard() {
           </div>
         </div>
       </main>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={logoutConfirm.isOpen}
+        onClose={logoutConfirm.closeConfirm}
+        onConfirm={confirmLogout}
+        title="Cerrar Sesión"
+        message="¿Estás seguro de que quieres cerrar sesión?"
+        confirmText="Cerrar Sesión"
+        cancelText="Cancelar"
+        type="warning"
+      />
     </div>
   );
 }
