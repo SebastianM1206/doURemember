@@ -107,6 +107,7 @@ function LoginForm() {
 
           {/* Login Button */}
           <button
+            data-testid="login-button"
             type="submit"
             disabled={loading}
             className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
