@@ -1,24 +1,15 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { validatePassword } from "../../utils/passwordUtils";
-import {createGroup, createUser} from "../../services/adminService";
 import { useAuth } from "../../context/AuthContext";
+import { createGrupo, inviteUser } from "../../services/doctorService";
 
 function CreatePatientModal({ isOpen, onClose }) {
-  const {user} = useAuth
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    // Datos del Paciente
-    pacienteNombre: "",
     pacienteEmail: "",
-    pacientePassword: "",
-
-    // Datos del Cuidador
-    cuidadorNombre: "",
     cuidadorEmail: "",
-    cuidadorPassword: "",
   });
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -32,105 +23,61 @@ function CreatePatientModal({ isOpen, onClose }) {
     setLoading(true);
 
     try {
-      //Se dividen los arreglos de los errores por rol
-      const patientValidations = validatePassword(formData.pacientePassword);
-      const caregiverValidations = validatePassword(formData.cuidadorPassword);
-      
-      //Si alguno de los roles tiene errores, se muestran
-      if (!validatePassword(formData.cuidadorPassword).isValid || !validatePassword(formData.pacientePassword).isValid){
-        setLoading(false);
-        // Mostrar errores del paciente
-        if (!patientValidations.isValid) {
-          patientValidations.errors.forEach((err, index) => { {/* Para cada uno de los errores, toma el item y el indice */}
-            setTimeout(() => (
-              toast.error(`PACIENTE: ${err}`, {pauseOnHover: false})
-            ), index * 5000) //El retraso de cada error depende de su indice para que nos e muetsren todos juentos
-          })
-        }
-        
-        // Mostrar errores del cuidador
-        if (!caregiverValidations.isValid) {
-          caregiverValidations.errors.forEach((err, index) => { {/* Para cada uno de los errores, toma el item y el indice */}
-            setTimeout(() => (
-              toast.error(`CUIDADOR: ${err}`, {pauseOnHover: false})
-            ), index * 5000) //El retraso de cada error depende de su indice para que nos e muetsren todos juentos
-          })
-        }
-        return;
+      // 1️⃣ Crear el grupo con el ID del médico
+      const grupoResult = await createGrupo(user.id);
+
+      if (!grupoResult.success) {
+        throw new Error(grupoResult.error || "Error al crear el grupo");
       }
 
-      //Datos del paciente
-      const patientData = {
-        nombre: formData.pacienteNombre,
-        email: formData.pacienteEmail,
-        password: formData.pacientePassword,
-        tipo_usuario: "Paciente"
-      }
-      //Datos del cuidador
-      const caregiverData = {
-        nombre: formData.cuidadorNombre,
-        email: formData.cuidadorEmail,
-        password: formData.cuidadorPassword,
-        tipo_usuario: "Cuidador"
-      }
-      
-      const { data: patientInfo, error: createPatientError } = await createUser(patientData);
-      const { data: caregiverInfo, error: createCaregiverError } = await createUser(caregiverData);
-      if (createPatientError || createCaregiverError) {
-        toast.error("Error al crear usuarios");
-        return;
+      const grupoId = grupoResult.data.id;
+
+      // 2️⃣ Enviar invitación al Paciente
+      const invitePacienteResult = await inviteUser(
+        grupoId,
+        formData.pacienteEmail,
+        "Paciente"
+      );
+
+      if (!invitePacienteResult.success) {
+        throw new Error(
+          invitePacienteResult.error || "Error al enviar invitación al Paciente"
+        );
       }
 
-      const groupData = {
-        medico_id: user.id,
-        cuidador_id: caregiverInfo.id,
-        paciente_id: patientInfo.id
+      // 3️⃣ Enviar invitación al Cuidador
+      const inviteCuidadorResult = await inviteUser(
+        grupoId,
+        formData.cuidadorEmail,
+        "Cuidador"
+      );
+
+      if (!inviteCuidadorResult.success) {
+        throw new Error(
+          inviteCuidadorResult.error || "Error al enviar invitación al Cuidador"
+        );
       }
 
-      const {error: groupError} = await createGroup(groupData);
-      if(groupError){
-        toast.error(groupError);
-        /*
-        POSIBLE LOGICA PARA ELIMINAR LOS USUARIO EN CASO DE ERROR AL CREAR EL GRUPO
-        await deleteUser(patientInfo.id);
-        await deleteUser(caregiverInfo.id);
-        */
-        return;
-      }
-      
-      console.log("Creando paciente y cuidador:", formData);
-      // Simular petición
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      toast.success("Paciente y cuidador creados exitosamente");
+      toast.success("Grupo creado e invitaciones enviadas exitosamente");
 
       // Resetear formulario
       setFormData({
-        pacienteNombre: "",
         pacienteEmail: "",
-        pacientePassword: "",
-        cuidadorNombre: "",
         cuidadorEmail: "",
-        cuidadorPassword: "",
       });
 
       onClose();
     } catch (error) {
-      console.error("Error al crear paciente y cuidador:", error);
-      toast.error("Error al crear paciente y cuidador");
+      console.error("Error al crear grupo y enviar invitaciones:", error);
+      toast.error(error.message || "Error al procesar la solicitud");
     } finally {
       setLoading(false);
     }
   };
-
   const handleCancel = () => {
     setFormData({
-      pacienteNombre: "",
       pacienteEmail: "",
-      pacientePassword: "",
-      cuidadorNombre: "",
       cuidadorEmail: "",
-      cuidadorPassword: "",
     });
     onClose();
   };
@@ -169,10 +116,10 @@ function CreatePatientModal({ isOpen, onClose }) {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-white">
-                    Agregar Nuevo Paciente
+                    Invitar Paciente y Cuidador
                   </h2>
                   <p className="text-blue-100 text-sm">
-                    Registra un paciente y su cuidador asignado
+                    Envía invitaciones al paciente y su cuidador
                   </p>
                 </div>
               </div>
@@ -219,62 +166,24 @@ function CreatePatientModal({ isOpen, onClose }) {
                     </svg>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    Datos del Paciente
+                    Correo del Paciente
                   </h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombre Completo
-                      <span className="text-red-500 ml-1">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="pacienteNombre"
-                      value={formData.pacienteNombre}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ej: Juan Pérez"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Correo Electrónico
-                      <span className="text-red-500 ml-1">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      name="pacienteEmail"
-                      value={formData.pacienteEmail}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="paciente@ejemplo.com"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Contraseña
-                      <span className="text-red-500 ml-1">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      name="pacientePassword"
-                      value={formData.pacientePassword}
-                      onChange={handleChange}
-                      required
-                      minLength={6}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Mínimo 8 caracteres"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      La contraseña debe tener al menos 8 caracteres
-                    </p>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Correo Electrónico del Paciente
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="pacienteEmail"
+                    value={formData.pacienteEmail}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="paciente@ejemplo.com"
+                  />
                 </div>
               </div>
 
@@ -284,9 +193,7 @@ function CreatePatientModal({ isOpen, onClose }) {
                   <div className="w-full border-t border-gray-300"></div>
                 </div>
                 <div className="relative flex justify-center">
-                  <span className="bg-white px-4 text-sm text-gray-500">
-                    Cuidador Asignado
-                  </span>
+                  <span className="bg-white px-4 text-sm text-gray-500">y</span>
                 </div>
               </div>
 
@@ -309,62 +216,24 @@ function CreatePatientModal({ isOpen, onClose }) {
                     </svg>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    Datos del Cuidador
+                    Correo del Cuidador
                   </h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombre Completo
-                      <span className="text-red-500 ml-1">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="cuidadorNombre"
-                      value={formData.cuidadorNombre}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ej: María González"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Correo Electrónico
-                      <span className="text-red-500 ml-1">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      name="cuidadorEmail"
-                      value={formData.cuidadorEmail}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="cuidador@ejemplo.com"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Contraseña
-                      <span className="text-red-500 ml-1">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      name="cuidadorPassword"
-                      value={formData.cuidadorPassword}
-                      onChange={handleChange}
-                      required
-                      minLength={6}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Mínimo 8 caracteres"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      La contraseña debe tener al menos 8 caracteres
-                    </p>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Correo Electrónico del Cuidador
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="cuidadorEmail"
+                    value={formData.cuidadorEmail}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="cuidador@ejemplo.com"
+                  />
                 </div>
               </div>
 
@@ -389,9 +258,9 @@ function CreatePatientModal({ isOpen, onClose }) {
                       Información importante
                     </p>
                     <p className="text-sm text-blue-700 mt-1">
-                      Se crearán automáticamente las cuentas para el paciente y
-                      su cuidador. Ambos recibirán un correo con sus
-                      credenciales de acceso.
+                      Se enviarán invitaciones por correo electrónico al
+                      paciente y su cuidador para que puedan completar su
+                      registro y crear sus cuentas.
                     </p>
                   </div>
                 </div>
@@ -449,10 +318,10 @@ function CreatePatientModal({ isOpen, onClose }) {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M5 13l4 4L19 7"
+                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                       />
                     </svg>
-                    <span>Crear Paciente y Cuidador</span>
+                    <span>Enviar Invitaciones</span>
                   </>
                 )}
               </button>

@@ -1,6 +1,56 @@
 import { supabase } from "../supabase/supabaseClient";
 
 /**
+ * Redime una invitación y crea el usuario
+ * @param {string} token - Token de la invitación
+ * @param {string} nombre - Nombre del usuario
+ * @param {string} password - Contraseña del usuario
+ * @param {string} email - Email del usuario (opcional, usa el de la invitación si no se provee)
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+export async function redeemInvitation(token, nombre, password, email = null) {
+  try {
+    const body = { token, nombre, password, email };
+
+    const res = await fetch(
+      "https://wjjldroqretgfpcufbnc.supabase.co/functions/v1/redeem-invitation-",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY, //  necesario para CORS
+          Authorization: `Bearer ${
+            import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY
+          }`, // ✅ recomendado
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      return {
+        success: false,
+        error: result.error || "Error al redimir la invitación",
+      };
+    }
+
+    return {
+      success: true,
+      data: result,
+      message: result.message || "Usuario creado correctamente",
+    };
+  } catch (err) {
+    console.error("Error al redimir invitación:", err);
+    return {
+      success: false,
+      error: err.message || "Error al procesar la invitación",
+    };
+  }
+}
+
+/**
  * Inicia sesión con correo y contraseña usando Supabase Auth
  * La sesión se guarda automáticamente por 7 días
  * @param {string} email - El correo del usuario

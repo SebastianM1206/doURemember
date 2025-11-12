@@ -8,6 +8,7 @@ import PacienteDashboard from "../pages/PacienteDashboard";
 import CuidadorDashboard from "../pages/CuidadorDashboard";
 import CuidadorImagenes from "../components/Cuidador/CuidadorImagenes";
 import CuidadorReportes from "../components/Cuidador/CuidadorReportes";
+import RedeemInvitation from "../pages/RedeemInvitation";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 /**
@@ -44,6 +45,9 @@ function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Ruta pública para redimir invitación */}
+        <Route path="/invitar" element={<RedeemInvitation />} />
+
         {/* Ruta de login - redirige al dashboard si ya está autenticado */}
         <Route
           path="/login"
